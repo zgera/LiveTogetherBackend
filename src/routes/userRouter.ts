@@ -32,12 +32,6 @@ userRouter.post("/signin", async (req: Request, res: Response) => {
 
         const token = authenticationService.createToken(tokenData);
 
-         
-/*         res.status(200).send({
-            user,
-            token
-        }); */
-
          res.cookie('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
@@ -100,7 +94,7 @@ userRouter.get("/me", autenticarToken, async (req, res) => {
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Error inesperado al obtener el usuario';
 
-        // Mejoramos el status según el tipo de error
+
         if (message === "Usuario no encontrado") {
             res.status(404).json({ error: message });
             return;
@@ -120,7 +114,6 @@ userRouter.get("/meInFamily/:familyId", autenticarToken, async (req, res) => {
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Error inesperado al obtener los puntos del usuario en la familia';
 
-        // Mejoramos el status según el tipo de error
         if (message === "El usuario no pertenece a la familia") {
             res.status(404).json({ error: message });
             return;

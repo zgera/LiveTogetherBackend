@@ -34,7 +34,7 @@ export class InvitationService {
 
         const user = await this.userService.getUserByUsername(usernameInvited); // Verifica si el usuario existe
 
-        await this.familyService.getFamily(idFamily); // Verifica si la familia existe
+        const family = await this.familyService.getFamily(idFamily); // Verifica si la familia existe
 
         if (await this.existsInvitation(user.idUser, idFamily)) {
             const invitation = await InvitationRepository.getInvitationByUserFamily(user.idUser, idFamily)
@@ -50,7 +50,8 @@ export class InvitationService {
 
         webSocketService.emitPrivateMessage(user.idUser, 
             {
-                type: "Invitation"
+                type: "Invitation",
+                familyName: family.name,
             }
         )
 
@@ -125,6 +126,8 @@ export class InvitationService {
         const updatedInvitation = await InvitationRepository.acceptInvitation(idInvitation);
 
         await this.familyService.joinFamily(token.userId, invitation.idFamily, 1); // El rol 1 es de miembro
+
+        webSocketService.addUserToFamiliesRoom(token.userId, invitation.idFamily)
 
         return updatedInvitation;
     }

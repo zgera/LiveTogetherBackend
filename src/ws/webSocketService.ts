@@ -3,7 +3,7 @@ import { authenticationService } from "../services/authenticationService"
 import { FamilyService } from "../services/familyService"
 import http from "http"
 
-const familyService = new FamilyService()
+let familyService: FamilyService
 
 export class webSocketService{
     private static io : Server
@@ -46,6 +46,8 @@ export class webSocketService{
 
             socket.join(`user:${user.userId}`)
 
+            familyService = new FamilyService()
+
             const familiesIDs = await familyService.getFamiliesByUser(user)
 
             familiesIDs.forEach( family => {
@@ -65,6 +67,11 @@ export class webSocketService{
         return this.io
     }
 
+    static addUserToFamiliesRoom(idUser: string, idFamily: string){
+        this.getIO();
+        this.io.in(`user:${idUser}`).socketsJoin(`family:${idFamily}`);
+    }
+
     static emitPrivateMessage(idUser: string, payload: Record<string, any>){
         this.getIO()
         this.io.to(`user:${idUser}`).emit("notification", payload);
@@ -72,6 +79,16 @@ export class webSocketService{
 
     static emitFamilyMessage(idFamily: string, payload: Record<string, any>){
         this.getIO()
+        
+        const sockets = this.io.sockets.adapter.rooms.get(`family:${idFamily}`)
+
+        if (!sockets) return;
+
+        sockets.forEach(socketId => {
+            console.log(socketId)
+        })
+
         this.io.to(`family:${idFamily}`).emit("notification", payload);
     }
+
 }

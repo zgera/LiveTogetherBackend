@@ -8,6 +8,7 @@ import { AuthorizationService } from "./authorizationService";
 import { FamilyService } from "./familyService";
 import { notificationService } from "./notificationService";
 import { taskWithCreatorAndUserAssigned, taskWithCreator } from "../types/taskTypes";
+import { webSocketService } from "../ws/webSocketService";
 
 
 export class TaskService {
@@ -183,10 +184,22 @@ export class TaskCompletionService extends TaskService {
             throw new Error("La tarea ya ha perdido su validez por estar fuera de tiempo");
         }
 
+        if (await this.authorizationService.isAdmin(token, taskAssigned.familyId)) {
+
+            await TaskRepository.markTaskAsCompletedByUser(idTask);
+
+            const taskCompleted = await TaskRepository.markTaskAsCompletedByAdmin(idTask);
+
+            await this.consumeTaskPoints(taskCompleted);
+
+            webSocketService.emitPrivateMessage(token.userId, {type: "Notification", idFamily: `${taskCompleted.familyId}`, title: `Tarea completada, puntos agregados`});
+
+            return taskCompleted;
+        }
+
         const taskCompleted = await TaskRepository.markTaskAsCompletedByUser(idTask);
 
         await this.NotificationService.createNotification(taskAssigned.familyId, token.userId, NotificationType.TASK_TO_REVIEW, taskCompleted.idTask);
-
 
         return taskCompleted;
     }
@@ -263,9 +276,11 @@ export class TaskCompletionService extends TaskService {
 
 export class TaskAssignmentService extends TaskService {
 
-    async externAssign(idTask: string, idUser: string): Promise<Task> {
+    async externAssign(idTask: string, idUser: string, token: TokenData): Promise<Task> {
         const task = await TaskRepository.assignTaskToUser(idTask, idUser)
-        await this.NotificationService.createNotification(task.familyId, idUser, NotificationType.TASK_ASSIGNED, task.idTask)
+        if (token.userId !== idUser){
+            await this.NotificationService.createNotification(task.familyId, idUser, NotificationType.TASK_ASSIGNED, task.idTask)
+        }
         return task
     }    
 
@@ -324,7 +339,7 @@ export class TaskAssignmentService extends TaskService {
 
         await this.authorizationService.assertUserIsAdmin(token, taskUnassigned.familyId)
 
-        const taskAssigned = await this.externAssign(idTask, idUser)
+        const taskAssigned = await this.externAssign(idTask, idUser, token);
 
         return taskAssigned;
     }
@@ -386,7 +401,7 @@ export class TaskAssignmentService extends TaskService {
                     break
                 }
 
-                await this.externAssign(task.idTask, user.idUser)
+                await this.externAssign(task.idTask, user.idUser, token)
             }
 
             index = (index + 1) % members.length

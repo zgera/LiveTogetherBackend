@@ -20,7 +20,7 @@ const port = 8080;
 const web_port = 3000
 
 app.use(cors({
-    origin: `http://localhost:${web_port}`, // permite las request desde esta direccion en especifico
+    origin: `http://localhost:${web_port}`, // permite las request desde estas direcciones en especifico
     credentials: true // por si se usan cookies
 }));
 

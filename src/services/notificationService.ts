@@ -14,7 +14,7 @@ enum NotificationTypesTitle {
     TASK_UNASSIGNED = "Tarea desasignada",
     TASK_REJECTED = "Tarea rechazada. Completar de nuevo.",
     TASK_TO_REVIEW = "Nueva tarea para revisar",
-    TASK_COMPLETED = "Tarea revisada y verificada por el admin"
+    TASK_COMPLETED = "Tarea revisada por el admin, puntos agregados"
 }
 
 
@@ -28,6 +28,7 @@ class createNewTaskStrategy implements createNotificationStrategy{
         const familyMembers = await FamilyUserRepository.getFamilyMembers(idFamily)
 
         familyMembers.forEach(member => {
+            if (member.idUser === idUser) return; // No se notifica al creador de la tarea
             notificationRepository.createNotification(idFamily, member.idUser, type, title, idTask)
         })
 

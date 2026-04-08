@@ -8,6 +8,7 @@ import { FamilyUserRepository } from "../repositories/familyUserRepository";
 import { TokenData } from "../types/auth";
 import { familyUserWithUser } from "../types/famiyUserWithUser";
 import { FamilyWithRole } from "../types/familyWithRole";
+import { webSocketService } from "../ws/webSocketService";
 
 export class FamilyService {
 
@@ -23,6 +24,8 @@ export class FamilyService {
         const family = await FamilyRepository.createFamily(name);
 
         await this.joinFamily(token.userId, family.idFamily, 2); // El rol 2 es de admin
+
+        webSocketService.addUserToFamiliesRoom(token.userId, family.idFamily)
 
         //await FamilyUserRepository.userJoinFamily(token.userId, family.idFamily, 2);
 
